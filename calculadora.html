@@ -114,29 +114,6 @@
         );
       }
 
-      function CalculatorDisplay({ operation, result }) {
-        return (
-          <div
-            className={`
-            flex flex-col gap-2 px-[1.375rem]
-            cursor-default select-none
-          `}
-          >
-            <Text
-              as="div"
-              variant="muted"
-              className="flex items-center justify-end"
-            >
-              {operation}
-            </Text>
-            <div className={`flex items-center justify-between`}>
-              <Text variant="muted">=</Text>
-              <Text variant="blast">{result}</Text>
-            </div>
-          </div>
-        );
-      }
-
       const buttons = [
         [
           { input: "CE" },
@@ -171,7 +148,88 @@
         ],
       ];
 
+      function CalculatorDisplay({ operation, result }) {
+        return (
+          <div
+            className={`
+            flex flex-col gap-2 px-[1.375rem]
+            cursor-default select-none
+          `}
+          >
+            <Text
+              as="div"
+              variant="muted"
+              className="flex items-center justify-end h-7"
+            >
+              {result && operation}
+            </Text>
+            <div className={`flex items-center justify-between h-9`}>
+              <Text variant="muted">=</Text>
+              <Text variant="blast">{result || operation}</Text>
+            </div>
+          </div>
+        );
+      }
+
       function Calculator() {
+        const [operation, setOperation] = React.useState("");
+        const [result, setResult] = React.useState("");
+
+        const operators = ["+", "-", "x", "/"];
+        const isOperator = operators.includes(input);
+        const lastChar = operation.trim().slice(-1);
+
+        function handleInputClick(input) {
+          if (input === "C") {
+            setOperation("");
+            setResult("");
+            return;
+          }
+
+          if (input === "CE") {
+            setResult("");
+            setOperation(operation.trimEnd().slice(0, -1).trimEnd());
+            return;
+          }
+
+          if (input === "=") {
+            const operationResult = eval(
+              operation.replace(/,/g, ".").replace(/x/g, "*")
+            );
+            const parsedResult = operationResult
+              .toString()
+              ?.replace(/\./g, ",");
+            setResult(parsedResult);
+            return;
+          }
+
+          if (result) {
+            if (input === ",") {
+              setOperation(`${result},`);
+            } else if (isOperator) {
+              setOperation(`${result} ${input} `);
+            } else {
+              setOperation(input);
+            }
+            setResult("");
+            return;
+          }
+
+          if (input === "," && !operation.endsWith(",")) {
+            setOperation(`${operation},`);
+            return;
+          }
+
+          if (isOperator) {
+            if (!operators.includes(lastChar) && operation !== "") {
+              setOperation(`${operation.trim()} ${input} `);
+            }
+            return;
+          }
+
+          setOperation(`${operation}${input}`);
+        }
+
         return (
           <Card
             className={`
@@ -179,7 +237,7 @@
           pt-14 px-8 pb-8
           `}
           >
-            <CalculatorDisplay operation="1 + 1" result="2" />
+            <CalculatorDisplay operation={operation} result={result} />
 
             <div className="flex flex-col gap-3">
               {buttons.map((rows, index) => {
@@ -191,6 +249,7 @@
                           key={button.input}
                           className={button.className || "w-16 h-16"}
                           variant={button.variant}
+                          onClick={() => handleInputClick(button.input)}
                         >
                           {button.input}
                         </Button>
@@ -212,11 +271,9 @@
             </Text>
 
             <ul>
-              <li>
-                <Text as="li">1 + 1 = 2</Text>
-                <Text as="li">2 + 3 + 1 = 6</Text>
-                <Text as="li">2 + 3 = 5</Text>
-              </li>
+              <Text as="li">1 + 1 = 2</Text>
+              <Text as="li">2 + 3 + 1 = 6</Text>
+              <Text as="li">2 + 3 = 5</Text>
             </ul>
           </Card>
         );
