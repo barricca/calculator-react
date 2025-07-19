@@ -148,6 +148,37 @@
         ],
       ];
 
+      const CalculatorContext = React.createContext();
+
+      function CalculatorProvider({ children }) {
+        const [history, setHistory] = React.useState([]);
+        const historyStorageKey = "history";
+
+        function updateHistory(operation, result) {
+          setHistory((prev) => {
+            const newEntry = `${operation} = ${result}`;
+            const updated = [...prev, newEntry];
+
+            localStorage.setItem(historyStorageKey, JSON.stringify(updated));
+            return updated.length > 12 ? updated.slice(-12) : updated;
+          });
+        }
+
+        React.useEffect(() => {
+          const savedHistory = localStorage.getItem(
+            historyStorageKey,
+            JSON.stringify(history)
+          );
+          setHistory((JSON.parse(savedHistory) || []).slice(-12));
+        }, []);
+
+        return (
+          <CalculatorContext.Provider value={{ history, updateHistory }}>
+            {children}
+          </CalculatorContext.Provider>
+        );
+      }
+
       function CalculatorDisplay({ operation, result }) {
         return (
           <div
@@ -171,15 +202,16 @@
         );
       }
 
-      function Calculator() {
+      function useCalculator() {
         const [operation, setOperation] = React.useState("");
         const [result, setResult] = React.useState("");
+        const { updateHistory } = React.useContext(CalculatorContext);
 
-        const operators = ["+", "-", "x", "/"];
-        const isOperator = operators.includes(input);
-        const lastChar = operation.trim().slice(-1);
+        function doOperation(input) {
+          const operators = ["+", "-", "x", "/"];
+          const isOperator = operators.includes(input);
+          const lastChar = operation.trim().slice(-1);
 
-        function handleInputClick(input) {
           if (input === "C") {
             setOperation("");
             setResult("");
@@ -200,6 +232,7 @@
               .toString()
               ?.replace(/\./g, ",");
             setResult(parsedResult);
+            updateHistory(operation, parsedResult);
             return;
           }
 
@@ -228,6 +261,20 @@
           }
 
           setOperation(`${operation}${input}`);
+        }
+
+        return {
+          operation,
+          result,
+          doOperation,
+        };
+      }
+
+      function Calculator() {
+        const { operation, result, doOperation } = useCalculator();
+
+        function handleInputClick(input) {
+          doOperation(input);
         }
 
         return (
@@ -264,17 +311,27 @@
       }
 
       function OperationHistory() {
+        const { history } = React.useContext(CalculatorContext);
+
         return (
           <Card className="w-[22.25rem] sm:w-[32rem] py-10 px-8">
             <Text as="h1" variant="heading" className="mb-4">
               Histórico de Operações
             </Text>
 
-            <ul>
-              <Text as="li">1 + 1 = 2</Text>
-              <Text as="li">2 + 3 + 1 = 6</Text>
-              <Text as="li">2 + 3 = 5</Text>
-            </ul>
+            {history.length > 0 ? (
+              <ul>
+                {history.map((value, index) => (
+                  <Text key={`item-${index}`} as="li">
+                    {value}
+                  </Text>
+                ))}
+              </ul>
+            ) : (
+              <Text as="p" variant="muted">
+                Nenhuma operação realizada ainda.
+              </Text>
+            )}
           </Card>
         );
       }
@@ -290,8 +347,10 @@
             gap-4
           `}
           >
-            <Calculator />
-            <OperationHistory />
+            <CalculatorProvider>
+              <Calculator />
+              <OperationHistory />
+            </CalculatorProvider>
           </main>
         );
       }
