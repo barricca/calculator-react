@@ -49,10 +49,68 @@
         );
       }
 
+      function ScrollTracker() {
+        const containerRef = React.useRef(null);
+        const [scrollInfo, setScrollInfo] = React.useState({
+          scrollTop: 0,
+          scrollHeight: 0,
+          clientHeight: 0,
+        });
+        const [scrollPercentage, setScrollPercentage] = React.useState(0);
+
+        function handleContainerScroll() {
+          if (!containerRef.current) {
+            return;
+          }
+          const { scrollTop, scrollHeight, clientHeight } =
+            containerRef.current;
+
+          setScrollInfo({ scrollTop, scrollHeight, clientHeight });
+
+          const maxScrollTop = scrollHeight - clientHeight;
+          const percentage = maxScrollTop
+            ? Math.round((scrollTop / maxScrollTop) * 100)
+            : 0;
+          setScrollPercentage(percentage);
+        }
+
+        return (
+          <div className="space-y-4">
+            <div
+              ref={containerRef}
+              onScroll={handleContainerScroll}
+              className={`
+              border border-solid border-blue-500 p-4
+              h-60 overflow-y-auto
+              `}
+            >
+              <div>
+                {Array.from({ length: 20 }).map((_, index) => (
+                  <p key={index} className="p-2 bg-gray-100 rounded m-1.5">
+                    Item do conteúdo {index + 1}
+                  </p>
+                ))}
+              </div>
+            </div>
+            <ul>
+              <li>Progresso do Scroll: {scrollPercentage}%</li>
+              <li>Onde está o scroll (scrollTop): {scrollInfo.scrollTop}</li>
+              <li>
+                Tamanho do scroll (scrollHeight): {scrollInfo.scrollHeight}
+              </li>
+              <li>
+                Tamanho do container (clientHeight): {scrollInfo.clientHeight}
+              </li>
+            </ul>
+          </div>
+        );
+      }
+
       function App() {
         return (
           <main className="p-3 space-y-2">
             <InputFocus />
+            <ScrollTracker />
           </main>
         );
       }
